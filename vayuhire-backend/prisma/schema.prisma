@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  role          String   @default("admin")
+  created_at    DateTime @default(now())
+}
+
+model Company {
+  id              String         @id @default(uuid())
+  name            String
+  logo_url        String?
+  career_page_url String
+  website         String?
+  industry        String?
+  is_active       Boolean        @default(true)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+  jobs            Job[]
+  scrape_sources  ScrapeSource[]
+}
+
+model ScrapeSource {
+  id               String      @id @default(uuid())
+  company_id       String
+  url              String
+  selector_hints   Json?
+  last_scraped_at  DateTime?
+  scrape_frequency String      @default("daily")
+  status           String      @default("active")
+  company          Company     @relation(fields: [company_id], references: [id])
+  scrape_logs      ScrapeLog[]
+}
+
+model Job {
+  id               String    @id @default(uuid())
+  company_id       String
+  title            String
+  description      String?   @db.Text
+  location         String?
+  salary_range     String?
+  job_type         String?
+  apply_url        String
+  posted_date      DateTime?
+  is_featured      Boolean   @default(false)
+  is_active        Boolean   @default(true)
+  source_scrape_id String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  company          Company   @relation(fields: [company_id], references: [id])
+
+  @@unique([company_id, title, apply_url])
+  @@index([company_id])
+  @@index([is_active, is_featured])
+  @@index([job_type])
+  @@index([location])
+}
+
+model Ad {
+  id                String   @id @default(uuid())
+  advertiser_name   String
+  banner_url        String?
+  target_url        String
+  placement         String
+  start_date        DateTime
+  end_date          DateTime
+  is_active         Boolean  @default(true)
+  impressions_count Int      @default(0)
+  clicks_count      Int      @default(0)
+  created_at        DateTime @default(now())
+}
+
+model ScrapeLog {
+  id               String       @id @default(uuid())
+  scrape_source_id String
+  status           String
+  jobs_found       Int          @default(0)
+  error_message    String?      @db.Text
+  run_at           DateTime     @default(now())
+  scrape_source    ScrapeSource @relation(fields: [scrape_source_id], references: [id])
+}
