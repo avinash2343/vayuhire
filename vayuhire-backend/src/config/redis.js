@@ -12,27 +12,18 @@ if (isValidRedis) {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
       retryStrategy(times) {
-        if (times > 3) {
-          console.warn('Redis: Max retries reached, giving up.');
-          return null;
-        }
+        if (times > 3) return null;
         return Math.min(times * 200, 2000);
       }
     });
-
-    redisClient.on('error', (err) => {
-      console.error('Redis connection error:', err.message);
-    });
-
-    redisClient.on('connect', () => {
-      console.log('Redis connected successfully');
-    });
+    redisClient.on('error', (err) => console.error('Redis error:', err.message));
+    redisClient.on('connect', () => console.log('Redis connected'));
   } catch (error) {
-    console.warn('Failed to initialize Redis:', error.message);
+    console.warn('Redis init failed:', error.message);
     redisClient = null;
   }
 } else {
-  console.log('Redis: No valid REDIS_URL found. Scraper queue disabled.');
+  console.log('Redis: Skipped (no valid URL). Scraper queue disabled.');
 }
 
 export default redisClient;
