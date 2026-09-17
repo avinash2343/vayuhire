@@ -3,21 +3,37 @@ import { env } from './env.js';
 
 let redisClient = null;
 
-try {
-  redisClient = new Redis(env.redisUrl, {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: false,
-    retryStrategy(times) {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    }
-  });
+// Only connect to Redis if REDIS_URL is explicitly set and not localhost placeholder
+const redisUrl = env.redisUrl;
+const isValidRedis = redisUrl && !redisUrl.includes('localhost') && !redisUrl.includes('127.0.0.1');
 
-  redisClient.on('error', (err) => {
-    console.error('Redis connection error:', err);
-  });
-} catch (error) {
-  console.error('Failed to initialize Redis:', error);
+if (isValidRedis) {
+  try {
+    redisClient = new Redis(redisUrl, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      retryStrategy(times) {
+        if (times > 3) {
+          console.warn('Redis: Max retries reached, giving up.');
+          return null; // Stop retrying
+        }
+        return Math.min(times * 200, 2000);
+      }
+    });
+
+    redisClient.on('error', (err) => {
+      console.error('Redis connection error:', err.message);
+    });
+
+    redisClient.on('connect', () => {
+      console.log('Redis connected successfully');
+    });
+  } catch (error) {
+    console.warn('Failed to initialize Redis:', error.message);
+    redisClient = null;
+  }
+} else {
+  console.log('Redis: No valid REDIS_URL found. Scraper queue disabled. App will run without Redis.');
 }
 
 export default redisClient;
