@@ -3,7 +3,6 @@ import { env } from './env.js';
 
 let redisClient = null;
 
-// Only connect to Redis if REDIS_URL is explicitly set and not localhost placeholder
 const redisUrl = env.redisUrl;
 const isValidRedis = redisUrl && !redisUrl.includes('localhost') && !redisUrl.includes('127.0.0.1');
 
@@ -15,7 +14,7 @@ if (isValidRedis) {
       retryStrategy(times) {
         if (times > 3) {
           console.warn('Redis: Max retries reached, giving up.');
-          return null; // Stop retrying
+          return null;
         }
         return Math.min(times * 200, 2000);
       }
@@ -33,7 +32,7 @@ if (isValidRedis) {
     redisClient = null;
   }
 } else {
-  console.log('Redis: No valid REDIS_URL found. Scraper queue disabled. App will run without Redis.');
+  console.log('Redis: No valid REDIS_URL found. Scraper queue disabled.');
 }
 
 export default redisClient;
